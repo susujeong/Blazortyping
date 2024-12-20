@@ -1,0 +1,22 @@
+﻿@page "/"
+@inject NavigationManager NavigationManager
+
+<MudStack>
+	<MudButton Variant="Variant.Filled" Color="Color.Default" FullWidth="true" @onclick="(() => SendLevelNum(1))">Level 1</MudButton>
+	<MudButton Variant="Variant.Filled" Color="Color.Default" FullWidth="true" @onclick="(() => SendLevelNum(2))">Level 2</MudButton>
+	<MudButton Variant="Variant.Filled" Color="Color.Default" FullWidth="true" @onclick="(() => SendLevelNum(3))">Level 3</MudButton>
+	<MudButton Variant="Variant.Filled" Color="Color.Default" FullWidth="true" @onclick="(() => SendLevelNum(4))">Level 4</MudButton>
+	<MudButton Variant="Variant.Filled" Color="Color.Default" FullWidth="true" @onclick="(() => SendLevelNum(5))">Level 5</MudButton>
+</MudStack>
+
+@code
+{
+	/// <summary>
+	/// 레벨마다 난이도 다르게 하기 위해서 숫자 넘겨주는 코드
+	/// </summary>
+	/// <param name="levelNumber"></param>
+	protected void SendLevelNum(int levelNumber)
+	{
+		NavigationManager.NavigateTo($"/game/{levelNumber}");
+	}
+}

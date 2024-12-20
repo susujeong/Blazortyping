@@ -1,0 +1,169 @@
+﻿@page "/game/{levelnum:int}"
+@using MudBlazor
+@using System.Timers;
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+
+<div style="display: flex; align-items: center; justify-content: flex-start;">
+	<div style="position:relative; top:0px; left:1150px">
+		@switch (life)
+		{
+			case 3:
+				@for (int i = 0; i < 3; i++)
+				{
+					<MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Error"></MudIcon>
+				}
+				break;
+			case 2:
+				@for (int i = 0; i < 2; i++)
+				{
+					<MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Error"></MudIcon>
+				}
+				<MudIcon Icon="@Icons.Material.Filled.FavoriteBorder" Color="Color.Error"></MudIcon>
+				break;
+			case 1:
+				<MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Error"></MudIcon>
+				@for (int i = 0; i < 2; i++)
+				{
+					<MudIcon Icon="@Icons.Material.Filled.FavoriteBorder" Color="Color.Error"></MudIcon>
+				}
+				break;
+			case 0:
+				@for (int i = 0; i < 3; i++)
+				{
+					<MudIcon Icon="@Icons.Material.Filled.FavoriteBorder" Color="Color.Error"></MudIcon>
+				}
+				break;
+		}
+	</div>
+	<div style="position: relative; left: 900px;">
+		<label>점수 : </label> @point
+	</div>
+</div>
+<div  style="height:570px; position:relative;">
+	<!-- 상단 콘텐츠 영역 -->
+	<div class="typing-game-container" style="height:calc(100% - 60px); overflow:hidden; position:relative;">
+		@foreach (var item in viewWord)
+		{
+			<div style="position:absolute; width:90%; top:@(item.y)px; left:@(item.x)%;  white-space:nowrap;">
+				<MudText Typo="Typo.h6">@item.text</MudText>
+			</div>
+		}
+	</div>
+
+	<!-- 하단 입력 필드 영역 -->
+	<div class="input-text" style="position:absolute; bottom:0; left:0; height:60px; width:100%; padding:10px; background-color:#f9f9f9; box-shadow:0 -2px 5px rgba(0,0,0,0.1);">
+		<MudTextField @bind-Value="userTypingText" @onkeyup="@Enter" Immediate="true" Label="단어 입력" Variant="Variant.Filled"></MudTextField>
+	</div>
+</div>
+
+@code 
+{
+	[Parameter]
+	public int levelnum { get; set; }
+	private Timer? wordtimer;
+	private Timer? timer;
+	private string userTypingText = string.Empty;
+	private int life = 3;
+	private int point = 0;
+
+	public class typingItem
+	{
+		public string? text; // 단어
+		public int x; // X 위치
+		public int y; // Y 위치
+	}
+
+
+	// 떨어질 단어 모음 // 나중에 DB로 대체될 예정
+	private List<string>? tempText;
+	private bool loading = true;
+	private string? error;
+
+	List<typingItem> viewWord = new();
+	List<string> itemlist = new List<string>();
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			tempText = await HttpClient.GetFromJsonAsync<List<string>>("api/csv/read");
+		}
+		catch(Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", ex.Message);
+			error = "데이터를 가져오는 중 오류가 발생했습니다." + ex.Message;
+		}
+		finally
+		{
+			loading = false;
+		}
+
+		// 단어 속도 조절
+		wordtimer = new();
+		wordtimer.Interval = 1000;
+		wordtimer.Elapsed += async (object? sender, ElapsedEventArgs e) =>
+		{
+			// 여기가 타이머 안에 들어올 코드
+			Random random = new Random();
+			int xRandom = random.Next(100);
+			int wordRandom = random.Next(tempText.Count);
+			viewWord.Add(new typingItem() { text = tempText[wordRandom], x = xRandom });
+			await InvokeAsync(StateHasChanged);
+		};
+		wordtimer.Enabled = true;
+
+		//////////////////////////////////////////////////////////////////////
+		/// 단어 떨어지는 속도
+		timer = new();
+		timer.Interval = 500;
+		timer.Elapsed += async (object? sender, ElapsedEventArgs e) =>
+		{
+
+			foreach(var item in viewWord)
+			{
+				item.y += levelnum*15;
+				if(item.y > 500)
+				{
+					life--;
+				}
+			}
+			if (life <= 0)
+			{
+				Gameover();
+				timer.Enabled = false;
+				return;
+			}
+			await InvokeAsync(StateHasChanged);
+		};
+		timer.Enabled = true;
+
+	}
+
+	public void Enter(KeyboardEventArgs e)
+	{
+		if (e.Code == "Enter" || e.Code == "NumPadEnter")
+		{
+			if(!string.IsNullOrWhiteSpace(userTypingText))
+			{
+				var matchedWord = viewWord.FirstOrDefault(w => w.text.Equals(userTypingText, StringComparison.OrdinalIgnoreCase));
+				if(matchedWord != null)
+				{
+					viewWord.Remove(matchedWord);
+					userTypingText = string.Empty;
+					point += 100;
+				}
+			}
+		}
+	}
+
+	public async void Gameover()
+	{
+		if (life < 0)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", "Game over!");
+			NavigationManager.NavigateTo("/");
+		}
+	}
+}

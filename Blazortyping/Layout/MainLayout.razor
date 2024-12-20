@@ -1,0 +1,46 @@
+﻿@inherits LayoutComponentBase
+
+@* Required *@
+<MudThemeProvider />
+<MudPopoverProvider />
+
+@* Needed for dialogs *@
+<MudDialogProvider />
+
+@* Needed for snackbars *@
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Color="Color.Primary" Fixed="false">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+        <MudSpacer />
+        @*     <MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" /> *@ @* 여기 깃허브 말고 홈페이지 넣어놓을 예정임 *@
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="@_open" ClipMode="_clipMode" Elevation="1" Variant="@DrawerVariant.Responsive">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">산성비 타자게임</MudText>
+        </MudDrawerHeader>
+        <MudNavMenu>
+            <MudNavLink Match="NavLinkMatch.All">Main</MudNavLink>
+            <MudNavLink Match="NavLinkMatch.All">Rank</MudNavLink>
+            <MudNavLink Match="NavLinkMatch.All">Customer Service</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+    
+    <MudMainContent Class="pt-16 px-16">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+
+@code
+{
+    private bool _open = false;
+    private DrawerClipMode _clipMode = DrawerClipMode.Never;
+
+    private void ToggleDrawer()
+    {
+        _open = !_open;
+    }
+}
